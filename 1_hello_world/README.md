@@ -16,6 +16,7 @@
 2. **安装 PlatformIO 插件**: 打开 VS Code 后，点击左侧边栏的“扩展 (Extensions)”图标（由四个方块组成），在搜索框输入 `PlatformIO IDE` 并点击安装。安装完成后，左侧会出现一个“外星人头”图标。
 
 ![安装 PlatformIO 插件](./assets/pio_extension.png)
+
 3. **安装 Arduino-ce 插件**: 在搜索框输入 `Arduino Community Edition` 并点击安装。
 ---
 
@@ -71,7 +72,7 @@ PlatformIO 把最常用的功能都为你整理好了，就放在 VS Code 界面
 3. 你会看到屏幕上打印出：`Serial communication initialized.`
 4. 在终端的输入框中敲入 `h`，然后按回车。板子会立刻回复你可用的命令菜单。
 5. 试着输入 `echo Hello ESP32!` 并回车，看看板子是不是乖乖学你说话了！
-
+6. 重新下载程序时，要记得串口监视器停止监视，**否则串口被占用时是无法下载程序的**
 ![串口交互测试画面](./assets/serial_monitor.png)
 
 ---
