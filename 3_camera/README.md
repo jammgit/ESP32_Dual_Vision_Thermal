@@ -41,24 +41,6 @@
 
 ### 编译和上传
 
-```bash
-# 编译项目
-pio run
-
-# 上传到 ESP32
-pio run --target upload
-
-# 打开串口监视器
-pio device monitor
-```
-
-### 完整流程
-
-```bash
-# 一次性编译、上传并监视
-pio run --target upload && pio device monitor
-```
-
 ## 功能特性
 
 - 相机图像捕获
