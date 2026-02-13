@@ -24,13 +24,11 @@
 
 // 定义传感器类型
 enum {
-    SENSOR_NONE,
-    SENSOR_HEIMANN_32X32,
     SENSOR_MLX90640, // 32x24
     SENSOR_MLX90641  // 16x12
 };  // 传感器类型枚举
 
- uint8_t current_sensor = SENSOR_NONE;
+ uint8_t current_sensor = SENSOR_MLX90640;
  uint8_t SRC_WIDTH = 32;
  uint8_t SRC_HEIGHT = 24;
 
