@@ -20,5 +20,8 @@ This project uses PlatformIO to build up firmwares. First you need to install Pl
 ![alt text](./.readme_assets/image2.png)
 - [2.8寸st7789LCD屏幕](https://item.taobao.com/item.htm?id=665897128566&mi_id=0000mm9jWbgX_rEN8hVAcU-ZdEFUBPkn1smQ8aMfIt5qCVo&spm=tbpc.boughtlist.suborder_itemtitle.1.744d2e8dG1TjTj&skuId=4800376616854)
 
+![alt text](./.readme_assets/90640.png)
+- 可以选用[MLX90640/MLX90641探头](https://item.taobao.com/item.htm?abbucket=18&id=682465022008&mi_id=0000AwFISFv9ecCuUgCoyu_N-gPCUs4steOFGa-0DGdULVY&ns=1&spm=a21n57.1.hoverItem.5&utparam=%7B%22aplus_abtest%22%3A%22d4af32b6d5d7abec4fc5b5c76469f8bf%22%7D&xxc=taobaoSearch&skuId=4881088648608)
+
 ![alt text](./.readme_assets/image3.png)
-- 海曼5.0热成像探头
+- 也可以选用 海曼5.0热成像探头
