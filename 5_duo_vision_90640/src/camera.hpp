@@ -50,7 +50,7 @@ void camera_init(){
     pinMode(I2CPULL_UP, OUTPUT);
     digitalWrite(I2CPULL_UP, I2CPULL_UP_OPEN);
     // 等待摄像头上电
-    delay(2500);
+    delay(800);
     // check_camera_i2c();
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
@@ -104,7 +104,8 @@ void camera_init(){
     // 针对 OV3660 的设置
     if (s->id.PID == OV3660_PID)
     {
-        s->set_vflip(s, 1);       // flip it back
+        s->set_vflip(s, 0);       // flip it back
+        s->set_hmirror(s, 1); // 开启水平镜像
         s->set_brightness(s, 1);  // up the brightness just a bit
         s->set_saturation(s, -2); // lower the saturation
     }

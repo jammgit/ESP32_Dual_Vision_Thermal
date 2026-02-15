@@ -12,9 +12,8 @@ This project uses PlatformIO to build up firmwares. First you need to install Pl
 
 ### 可能用得上的物料与链接
 
-
 ![alt text](./.readme_assets/2640.png)
-- [OV2640](https://item.taobao.com/item.htm?abbucket=18&id=627789434982&mi_id=0000ak-SnEMuR-jih50_J2QsWTFGzepVYVtTbDOiy4ukQS4&ns=1&spm=a21n57.1.hoverItem.2&utparam=%7B%22aplus_abtest%22%3A%2240d64c7aea28c49d19b9c82834b27a49%22%7D&xxc=taobaoSearch&skuId=5698471763808)
+- [OV2640 / OV3660](https://item.taobao.com/item.htm?abbucket=18&id=627789434982&mi_id=0000ak-SnEMuR-jih50_J2QsWTFGzepVYVtTbDOiy4ukQS4&ns=1&spm=a21n57.1.hoverItem.2&utparam=%7B%22aplus_abtest%22%3A%2240d64c7aea28c49d19b9c82834b27a49%22%7D&xxc=taobaoSearch&skuId=5698471763808)
 
 ![alt text](./.readme_assets/bat.png)
 - [602530锂电池](https://item.taobao.com/item.htm?spm=tbpc.boughtlist.suborder_itemtitle.1.744d2e8dmZu3fT&id=643350021642&mi_id=0000d3WV6kpuGeAMt06zYXt2AImW57Kf9e5F5cApEyiOroM)
