@@ -1,5 +1,7 @@
 ## Umeko Dual Vison Thermal Demos
 
+[![License: CC BY-NC 4.0](https://img.shields.io/badge/License-CC%20BY--NC%204.0-lightgrey.svg)](https://creativecommons.org/licenses/by-nc/4.0/)
+
 [视频教程](https://www.bilibili.com/video/BV1iTciz7E7s/)
 
 This project uses PlatformIO to build up firmwares. First you need to install PlatformIO plugins with VSCode to start up your programing.
