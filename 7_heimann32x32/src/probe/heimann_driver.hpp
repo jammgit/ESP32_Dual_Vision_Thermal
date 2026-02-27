@@ -477,10 +477,9 @@ void calculate_pixel_temp() {
 
       /******************************************************************************************************************
          step 1: use a variable with bigger data format for the compensation steps
+         Note: prob_lock is already set by caller (sensor_loop), don't modify it here
        ******************************************************************************************************************/
-      prob_lock = true;
       pixel = (signed long) data_pixel[m][n];
-      prob_lock = false;
       /******************************************************************************************************************
          step 2: compensate thermal drifts (see datasheet, chapter: Thermal Offset)
        ******************************************************************************************************************/
@@ -1589,6 +1588,7 @@ void print_calc_steps2() {
 
 void blocking_sensor_init_and_check(){
   // 用于标记所有检查是否全部通过
+prob_status = PROB_CONNECTING;
 int retry_count = 0;
 bool verification_passed = false;
 uint8_t error = 1;
@@ -1662,7 +1662,7 @@ while (!verification_passed) {
 void sensor_power_on(){
   pinMode(MLX_VDD, OUTPUT);
   digitalWrite(MLX_VDD, LOW);
-  prob_status = PROB_CONNECTING;
+  // prob_status = PROB_CONNECTING;
 }
 // 更新传感器画面
 // 更新传感器画面

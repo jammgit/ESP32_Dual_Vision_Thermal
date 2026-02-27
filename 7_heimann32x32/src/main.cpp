@@ -14,6 +14,7 @@ void setup1(){
   sensor_power_on();
   sensor_init();
   prob_status = PROB_READY;
+  delay(100);
   flag_sensor_ok = true;
 }
 
@@ -55,7 +56,6 @@ void setup() {
   delay(100);
   config_loaded = true;
   while (flag_sensor_ok==false) {preparing_loop();delay(5);}
-  // refresh_status();
   smooth_off();
   tft.fillScreen(TFT_BLACK);
   screen_loop();
@@ -67,5 +67,4 @@ void loop() {
   bat_loop();
   screen_loop();      // 渲染屏幕
   button_loop();
-  delay(5);
 }

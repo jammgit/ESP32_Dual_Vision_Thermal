@@ -173,32 +173,41 @@ void freeze_handeler(){
 // 探头准备期间的渲染管线
 void preparing_loop(){
    tft.setRotation(1);
-   // 屏幕 240x320，旋转1后变成 320x240
-   // 左下角坐标：x=5, y=230（留边距）
-   const int bottom_y = 230;
+   static uint8_t last_status = 0xFF;
    const int left_x = 5;
+   const int bottom_y = 230;  // 最底部一行
    
-   if (prob_status == PROB_CONNECTING){
-      tft.setTextColor(TFT_WHITE, TFT_BLACK, true);
-      tft.setTextSize(1);
-      tft.setCursor(left_x, bottom_y - 10);
-      tft.printf("Connecting HTPAd...");
-      tft.setCursor(left_x, bottom_y);
-      tft.printf("Addr:%d", SENSOR_ADDRESS);
-      delay(10);
-   }else if(prob_status == PROB_INITIALIZING){
-      tft.setTextColor(TFT_WHITE, TFT_BLACK, true);
-      tft.setTextSize(1);
-      tft.setCursor(left_x, bottom_y);
-      tft.printf("HTPAd ready, init...");
-      delay(10);
-   }else if(prob_status == PROB_PREPARING){
-      tft.setTextColor(TFT_WHITE, TFT_BLACK, true);
-      tft.setTextSize(1);
-      tft.setCursor(left_x, bottom_y);
-      tft.printf("HTPAd init..."); 
-      delay(10);
+   // 只清除底部一行（高度13像素）
+   if (prob_status != last_status) {
+      tft.fillRect(left_x, bottom_y - 2, 200, 13, TFT_BLACK);
+      last_status = prob_status;
    }
+   
+   tft.setTextColor(TFT_WHITE, TFT_BLACK, true);
+   tft.setTextSize(1);
+   tft.setCursor(left_x, bottom_y);
+   
+   static uint8_t spin = 0;
+   const char* spinner = "|/-\\";
+   
+   if (prob_status == PROB_CONNECTING) {
+      // 阶段1: 连接中
+      tft.printf("[%c] Connecting...  [ ] [ ]", spinner[spin++ & 3]);
+   } 
+   else if (prob_status == PROB_INITIALIZING) {
+      // 阶段2: 已连接
+      tft.printf("[O] Connected(0x%02X) [%c] [ ]", SENSOR_ADDRESS, spinner[spin++ & 3]);
+   }
+   else if (prob_status == PROB_PREPARING) {
+      // 阶段3: 就绪
+      tft.printf("[O] Connected(0x%02X) [O] [%c]", SENSOR_ADDRESS, spinner[spin++ & 3]);
+   }
+   else if (prob_status == PROB_READY) {
+      // 阶段4: 全部就绪
+      tft.printf("[O] Connected(0x%02X) [O] [O] Ready!", SENSOR_ADDRESS);
+      delay(500);
+   }
+   delay(10);
 }
 
 // 探头准备期间的渲染管线
@@ -214,7 +223,7 @@ void refresh_status(){
 // 处理tft_espi渲染管线
 void screen_loop(){
    static uint8_t count_max_flash = 0;
-   static unsigned short diff = T_max - T_min + 1;
+   static unsigned short diff = 1;  // 初始值避免除零，实际值在锁保护下获取
    if (! kalman_matrix_inited){  // 卡尔曼矩阵初始化
       pix_cp_lock = true;
       KalmanMatrix_Init(kalman_matrix, data_pixel);
@@ -223,23 +232,19 @@ void screen_loop(){
       kalman_matrix_inited = true;
    }
    if(!flag_in_photo_mode){
-      float ft_max = float(T_max) / 10 - 273.15;
-      float ft_min = float(T_min) / 10 - 273.15;
-      ft_max = temp_cal(ft_max);
-      ft_min = temp_cal(ft_min);
       unsigned short value;
+      // 等待传感器释放锁，然后获取 pix_cp_lock 保护数据访问
       while (prob_lock == true) {delay(5);}
       pix_cp_lock = true;
+      // 在锁保护下读取 T_max/T_min
+      float ft_max = float(T_max) / 10 - 273.15;
+      float ft_min = float(T_min) / 10 - 273.15;
+      static unsigned short diff;
+      diff = T_max - T_min + 1;
       ft_point = (float)(data_pixel[30-(test_point[1] / PROB_SCALE)][30-(test_point[0] / PROB_SCALE)] / 10.) - 273.15;
-      
       ft_point = temp_cal(ft_point);
       for (int i = 0; i < 32; i++) {
       for (int j = 0; j < 32; j++) {
-         // 拷贝温度信息, 并提前映射到色彩空间中
-         // value = (180 * (data_pixel[i][j] - T_min) / (T_max - T_min));
-         // if (value < 180) {
-         // draw_pixel[i][j] = value;
-         // }
          if( flag_use_kalman ){
             value = Kalman_Update(&kalman_matrix[i][j], data_pixel[i][j]);
             diff = Kalman_Update(&kfp_diff, T_max - T_min);
