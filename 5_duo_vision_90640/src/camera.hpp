@@ -4,6 +4,7 @@
 #include "soc/rtc_cntl_reg.h"
 #include "esp_camera.h"
 #include "screen.hpp"
+#include "shared_val.hpp"
 #include <Wire.h>
 // 摄像头在这块板子上的引脚定义
 #define CAM_WIDTH 320
@@ -104,17 +105,16 @@ void camera_init(){
     // 针对 OV3660 的设置
     if (s->id.PID == OV3660_PID)
     {
-        s->set_vflip(s, 0);       // flip it back
-        s->set_hmirror(s, 1); // 开启水平镜像
+        s->set_vflip(s, camera_vflip);       // 使用保存的翻转设置
+        s->set_hmirror(s, camera_hmirror);   // 使用保存的翻转设置
         s->set_brightness(s, 1);  // up the brightness just a bit
         s->set_saturation(s, -2); // lower the saturation
     }
     // 针对 OV2640 的设置
     if (s->id.PID == OV2640_PID)
     {
-        // 旋转 180 度 = 垂直翻转 + 水平镜像
-        s->set_vflip(s, 0);   // 开启垂直翻转
-        s->set_hmirror(s, 0); // 开启水平镜像
+        s->set_vflip(s, camera_vflip);       // 使用保存的翻转设置
+        s->set_hmirror(s, camera_hmirror);   // 使用保存的翻转设置
     }
 }
 

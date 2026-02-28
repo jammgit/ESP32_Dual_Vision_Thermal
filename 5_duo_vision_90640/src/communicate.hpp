@@ -88,7 +88,7 @@ void serial_loop(){
             String message = input.substring(5); // Extract message after "echo "
             Serial.println("Echo: " + message);
 
-        } else if (input.startsWith("screen ")) {  // Intercept screen control commands
+        } else if (input.startsWith("screen ") || input.startsWith("color_reverse ")) {  // Intercept screen control commands
             screen_cli(input);
 
         } else if (input == "mode") {

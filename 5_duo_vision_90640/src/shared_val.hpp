@@ -132,7 +132,6 @@ bool camera_vflip = false;
 bool camera_hmirror = false;
 
 
- bool color_reverse = true;  // 是否反转色彩
 
 // ================= 显示模式定义 =================
 enum DisplayMode {

@@ -17,8 +17,6 @@ void setup() {
   EEPROM.begin(512);  // 初始化 EEPROM
   screen_init();
   camera_init();
-  
-  
 
   // 设置当前传感器类型
   current_sensor = EEPROM.read(EEPROM_ADDR_SENSOR_TYPE); // 读取传感器类型

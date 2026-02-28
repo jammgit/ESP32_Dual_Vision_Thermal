@@ -8,6 +8,7 @@
 #define PIN_BLK 4
 extern uint8_t brightness;  // 在 shared_val.hpp 中定义
 
+bool color_reverse = true;  // 是否反转色彩
 static const uint16_t screenWidth  = 320;
 static const uint16_t screenHeight = 240;
 
@@ -88,7 +89,14 @@ void screen_init(){
     tft.init();
     tft.setRotation(1); 
     tft.setSwapBytes(true);
-    tft.invertDisplay(false); 
+    color_reverse = EEPROM.read(15) != 0; // 非零值转换为 true，零值转换为 false
+    if(!color_reverse){
+        tft.invertDisplay(true);
+        Serial.print("[Screen] Color reversed.");
+    }else{
+        tft.invertDisplay(false);
+        Serial.print("[Screen] Color not reversed.");
+    }
 
     // 打开屏幕之后要做的事情：慢慢打开屏幕，然后绘制一个可爱的miku图片
     render_miku();
@@ -119,6 +127,34 @@ void screen_cli(String cmd){
         Serial.print("[Screen] Brightness set to: ");
         Serial.println(value);
         
+    }else if (cmd.startsWith("color_reverse ")){
+        String param = cmd.substring(14);
+        param.trim();  // 去除参数两端的空白字符
+        if (param == "1") {
+            color_reverse = true; // 设置为反转
+            Serial.println("Color reverse enabled.");
+            delay(100);
+            tft.invertDisplay(false); // 立即应用反转设置
+            EEPROM.write(15, color_reverse);
+            EEPROM.commit(); // 确保数据写入 EEPROM
+        } else if (param == "0") {
+            color_reverse = false; // 设置为不反转
+            Serial.println("Color reverse disabled.");
+            delay(100);
+            tft.invertDisplay(true); // 立即应用反转设置
+            EEPROM.write(15, color_reverse);
+            EEPROM.commit(); // 确保数据写入 EEPROM
+        } else if (param == "-q") {
+            Serial.println("Color reverse status: " + String(color_reverse ? "enabled" : "disabled")); // 查询当前状态
+        } else if (param == "-r") {
+            color_reverse = !color_reverse; // 切换反转状态
+            delay(100);
+            tft.invertDisplay(!color_reverse);
+            EEPROM.write(15, color_reverse);
+            EEPROM.commit(); // 确保数据写入 EEPROM
+        }else {
+            Serial.println("Invalid parameter for color_reverse. Use '1' to enable, '0' to disable, or '-q' to query status.");
+        }
     }else{
         // 未知指令提示
         Serial.println("[Error] Unknown screen command: " + cmd);
