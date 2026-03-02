@@ -133,8 +133,16 @@ void screen_cli(String cmd){
             EEPROM.commit(); // 确保数据写入 EEPROM
         } else if (param == "-q") {
             Serial.println("Color reverse status: " + String(color_reverse ? "enabled" : "disabled")); // 查询当前状态
-        }else {
-            Serial.println("Invalid parameter for color_reverse. Use '1' to enable, '0' to disable, or '-q' to query status.");
+        } else if (param == "-r") {
+            // 翻转当前状态
+            color_reverse = !color_reverse;
+            Serial.println("Color reverse toggled: " + String(color_reverse ? "enabled" : "disabled"));
+            delay(100);
+            tft.invertDisplay(!color_reverse); // 立即应用反转设置
+            EEPROM.write(0, color_reverse);
+            EEPROM.commit(); // 确保数据写入 EEPROM
+        } else {
+            Serial.println("Invalid parameter for color_reverse. Use '1' to enable, '0' to disable, '-q' to query, or '-r' to toggle.");
         }
     }else{
         // 未知指令提示

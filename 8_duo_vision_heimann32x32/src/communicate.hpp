@@ -43,7 +43,7 @@ void serial_loop(){
             Serial.println("  screen off            - Turn off the screen smoothly");
             Serial.println("  screen brightness <X> - Set brightness level (X: 5~255)");
             Serial.println("  color_reverse <opt>   - Color inversion control");
-            Serial.println("                         1: enable, 0: disable, -q: query status");
+            Serial.println("                         1: enable, 0: disable, -q: query, -r: toggle");
             Serial.println("");
             Serial.println("[ File System Commands ]");
             Serial.println("  ls [path]             - List directory contents");
