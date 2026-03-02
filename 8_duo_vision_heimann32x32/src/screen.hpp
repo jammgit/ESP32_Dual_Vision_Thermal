@@ -4,6 +4,7 @@
 #include <TJpg_Decoder.h>
 #include <Arduino.h>
 #include "miku_jpg.hpp"
+#include "cam_cal_mat.hpp"  // 摄像头校准矩阵数据
 
 #define PIN_BLK 4
 #define PWM_CHANNEL 0     // LEDC PWM 通道
@@ -53,9 +54,8 @@ bool tft_output(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16_t* bitmap){
    return 1;
 }
 
-// ================= 绘制图片 =================
-void render_miku(){
-
+// 显示启动画面
+void render_boot_logo(){
    TJpgDec.setCallback(tft_output);  // 设置jpeg解码器回调函数
    tft.fillScreen(TFT_BLACK);
    TJpgDec.setJpgScale(1);
@@ -65,6 +65,7 @@ void render_miku(){
    TJpgDec.drawJpg(0, 0, miku_jpg, sizeof(miku_jpg));
    tft.endWrite();
 }
+
 
 // ================= 屏幕初始化主函数 =================
 void screen_init(){
@@ -87,7 +88,7 @@ void screen_init(){
     }
     tft.initDMA();
     // 打开屏幕之后要做的事情：慢慢打开屏幕，然后绘制一个可爱的miku图片
-    render_miku();
+    render_boot_logo();  // 显示启动画面
     smooth_on();
     delay(500);
 }
@@ -139,4 +140,18 @@ void screen_cli(String cmd){
         // 未知指令提示
         Serial.println("[Error] Unknown screen command: " + cmd);
     }
+}
+
+// 执行摄像头校准流程
+void camera_calibrate(){
+   TJpgDec.setCallback(tft_output);
+   tft.fillScreen(TFT_BLACK);
+   TJpgDec.setJpgScale(1);
+   TJpgDec.setSwapBytes(false);
+   camera_calibrated = true;
+   uint16_t w = 0, h = 0;
+   TJpgDec.getJpgSize(&w, &h, camera_cal_mat, sizeof(camera_cal_mat));
+   tft.startWrite();
+   TJpgDec.drawJpg(0, 0, camera_cal_mat, sizeof(camera_cal_mat));
+   tft.endWrite();
 }
