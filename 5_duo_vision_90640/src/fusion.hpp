@@ -24,6 +24,14 @@ static TFT_eSprite* fusion_sprite = nullptr;
 // 画中画模式用的全屏 Sprite（在 PSRAM 中创建）
 static TFT_eSprite* pip_sprite = nullptr;
 
+// 边缘提取融合：灰度与边缘强度缓冲区（PSRAM，仅 Thermal Overlay 模式使用）
+static uint8_t* edge_gray_buffer = nullptr;   // 320*240 亮度
+static uint8_t* edge_mag_buffer = nullptr;    // 320*240 Sobel 幅值
+
+// 边缘融合开关与阈值：1=仅边缘叠加（细节增强），0=全图透明叠加（原逻辑）
+#define FUSION_EDGE_ONLY 1
+#define EDGE_THRESHOLD   24   // Sobel 幅值低于此不叠加可见光，避免噪声
+
 // JPEG 解码回调函数 - 将解码后的图像存入缓冲区
 // 使用静态指针，这样可以在不修改回调签名的情况下访问 buffer
 static uint16_t* decode_target_buffer = nullptr;
@@ -47,7 +55,7 @@ bool camera_decode_callback(int16_t x, int16_t y, uint16_t w, uint16_t h, uint16
     return 1;
 }
 
-// 分配摄像头帧缓冲区
+// 分配摄像头帧缓冲区及边缘融合用灰度/边缘缓冲
 void init_fusion_buffers() {
     if (camera_frame_buffer == nullptr) {
         camera_frame_buffer = (uint16_t*)ps_malloc(320 * 240 * sizeof(uint16_t));
@@ -57,6 +65,16 @@ void init_fusion_buffers() {
             Serial.println("[Fusion] Failed to allocate camera frame buffer!");
         }
     }
+#if FUSION_EDGE_ONLY
+    if (edge_gray_buffer == nullptr) {
+        edge_gray_buffer = (uint8_t*)ps_malloc(320 * 240);
+        if (edge_gray_buffer) Serial.println("[Fusion] Edge gray buffer allocated");
+    }
+    if (edge_mag_buffer == nullptr) {
+        edge_mag_buffer = (uint8_t*)ps_malloc(320 * 240);
+        if (edge_mag_buffer) Serial.println("[Fusion] Edge magnitude buffer allocated");
+    }
+#endif
 }
 
 // 初始化全屏 Sprite（PSRAM），用于 alpha 融合
@@ -89,13 +107,23 @@ void init_pip_sprite() {
     }
 }
 
-// 释放摄像头帧缓冲区
+// 释放摄像头帧缓冲区及边缘缓冲
 void free_fusion_buffers() {
     if (camera_frame_buffer != nullptr) {
         free(camera_frame_buffer);
         camera_frame_buffer = nullptr;
         Serial.println("[Fusion] Camera frame buffer freed");
     }
+#if FUSION_EDGE_ONLY
+    if (edge_gray_buffer != nullptr) {
+        free(edge_gray_buffer);
+        edge_gray_buffer = nullptr;
+    }
+    if (edge_mag_buffer != nullptr) {
+        free(edge_mag_buffer);
+        edge_mag_buffer = nullptr;
+    }
+#endif
     if (fusion_sprite != nullptr) {
         fusion_sprite->deleteSprite();
         delete fusion_sprite;
@@ -183,12 +211,47 @@ inline uint16_t alpha_blend(uint16_t bg_color, uint16_t fg_color, uint8_t alpha)
 }
 
 // 从 RGB565 提取亮度值（用于判断是否为高温区域）
+// 若 color 为 TFT 字节交换后的 RGB565，先 swap_bytes 再传入
 inline uint8_t get_luminance(uint16_t color) {
     uint8_t r = (color >> 11) & 0x1F;
     uint8_t g = (color >> 5) & 0x3F;
     uint8_t b = color & 0x1F;
     return (r + g + b) / 3;
 }
+
+#if FUSION_EDGE_ONLY
+// 将 RGB565 帧转为灰度（亮度），cam 为 TFT 字节序，需先还原再取 Y
+inline void rgb565_to_gray(uint16_t* cam, uint8_t* gray, int w, int h) {
+    const int n = w * h;
+    for (int i = 0; i < n; i++) {
+        uint16_t c = (cam[i] << 8) | (cam[i] >> 8);
+        gray[i] = get_luminance(c);
+    }
+}
+
+// Sobel 边缘提取，整数运算，幅值 = |Gx|+|Gy| 截断到 0~255
+// gray/edge 均为 w*h，边界 1 像素不计算（置 0）
+inline void sobel_edge(uint8_t* gray, uint8_t* edge, int w, int h) {
+    const int stride = w;
+    memset(edge, 0, (size_t)(w * h));
+    for (int y = 1; y < h - 1; y++) {
+        uint8_t* row_m1 = gray + (y - 1) * stride;
+        uint8_t* row_0  = gray + y * stride;
+        uint8_t* row_p1 = gray + (y + 1) * stride;
+        uint8_t* out   = edge + y * stride;
+        for (int x = 1; x < w - 1; x++) {
+            int gx = (int)row_m1[x + 1] - (int)row_m1[x - 1]
+                   + 2 * ((int)row_0[x + 1] - (int)row_0[x - 1])
+                   + (int)row_p1[x + 1] - (int)row_p1[x - 1];
+            int gy = (int)row_p1[x - 1] - (int)row_m1[x - 1]
+                   + 2 * ((int)row_p1[x] - (int)row_m1[x])
+                   + (int)row_p1[x + 1] - (int)row_m1[x + 1];
+            int mag = (gx < 0 ? -gx : gx) + (gy < 0 ? -gy : gy);
+            out[x] = (uint8_t)(mag > 255 ? 255 : mag);
+        }
+    }
+}
+#endif
 
 // 渲染热成像到 Sprite（解决闪烁问题）
 void render_thermal_to_sprite(TFT_eSprite* sprite, int width, int height) {
@@ -531,6 +594,14 @@ void draw_thermal_overlay() {
     esp_camera_fb_return(fb);
     fb = NULL;
 
+#if FUSION_EDGE_ONLY
+    // 1.5 可见光边缘提取：灰度 -> Sobel，用于仅在边缘处叠加轮廓
+    if (edge_gray_buffer && edge_mag_buffer) {
+        rgb565_to_gray(cam_buffer, edge_gray_buffer, 320, 240);
+        sobel_edge(edge_gray_buffer, edge_mag_buffer, 320, 240);
+    }
+#endif
+
     // 2. 渲染热成像到 Sprite 缓冲区（固定位置）
     uint16_t* sprite_buffer = (uint16_t*)fusion_sprite->getPointer();
     if (sprite_buffer == nullptr) {
@@ -638,21 +709,28 @@ void draw_thermal_overlay() {
                 // 获取热成像像素 (背景)
                 uint16_t therm_pixel = *pSpriteLine;
 
-                // 计算 alpha 值
-                // 首先找到热成像对应的原始数据索引
                 int therm_x = x / scale;
                 int therm_y = y / scale;
                 int therm_idx = therm_y * cols + therm_x;
 
                 if (therm_x < cols && therm_y < rows && therm_idx < cols * rows) {
-                    // 使用全局透明度变量，而不是基于温度的 alpha 值
-                    uint8_t alpha = fusion_alpha;
-
+                    uint8_t alpha;
+#if FUSION_EDGE_ONLY
+                    // 细节增强：仅在可见光边缘处叠加轮廓，避免全图虚影
+                    if (edge_mag_buffer) {
+                        uint8_t edge_mag = edge_mag_buffer[v * 320 + u];
+                        alpha = (edge_mag > EDGE_THRESHOLD)
+                            ? (uint8_t)((uint32_t)edge_mag * fusion_alpha / 255)
+                            : 0;
+                    } else {
+                        alpha = fusion_alpha;
+                    }
+#else
+                    alpha = fusion_alpha;
                     if (alpha < 50) alpha = 50;
                     if (alpha > 255) alpha = 255;
-
-                    // 使用 alpha 混合
-                    uint16_t blended_color = alpha_blend(cam_pixel, therm_pixel, alpha);
+#endif
+                    uint16_t blended_color = alpha_blend(therm_pixel, cam_pixel, alpha);
                     *pSpriteLine = blended_color;
                 }
             }
